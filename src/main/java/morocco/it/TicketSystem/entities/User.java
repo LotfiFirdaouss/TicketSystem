@@ -1,10 +1,7 @@
 package morocco.it.TicketSystem.entities;
 
 import jakarta.persistence.*;
-import lombok.AllArgsConstructor;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
+import lombok.*;
 import morocco.it.TicketSystem.entities.enums.Role;
 
 import java.time.Instant;
@@ -13,10 +10,7 @@ import java.util.List;
 @Entity
 @Table(name= "users")
 @SequenceGenerator(name = "user_seq", sequenceName = "user_seq", allocationSize = 1)
-@Getter
-@Setter
-@NoArgsConstructor
-@AllArgsConstructor
+@Data
 public class User {
 
     @Id
@@ -38,4 +32,7 @@ public class User {
 
     @OneToMany(mappedBy = "assignedTo", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     private List<Ticket> assignedTickets;
+
+    @OneToMany(mappedBy = "user")
+    private List<AuditLog> auditLogs;
 }

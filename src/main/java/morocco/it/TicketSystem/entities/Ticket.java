@@ -1,23 +1,18 @@
 package morocco.it.TicketSystem.entities;
 
 import jakarta.persistence.*;
-import lombok.AllArgsConstructor;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
+import lombok.*;
 import morocco.it.TicketSystem.entities.enums.Category;
 import morocco.it.TicketSystem.entities.enums.Priority;
 import morocco.it.TicketSystem.entities.enums.Status;
 
 import java.time.Instant;
+import java.util.List;
 
 @Entity
 @Table(name = "tickets")
 @SequenceGenerator(name = "ticket_seq", sequenceName = "ticket_seq", allocationSize = 1)
-@Getter
-@Setter
-@NoArgsConstructor
-@AllArgsConstructor
+@Data
 public class Ticket {
 
     @Id
@@ -38,7 +33,7 @@ public class Ticket {
     @Column(nullable = false)
     private Status status = Status.NEW;
 
-    @Column(name = "created_at", nullable = false)
+    @Column(name = "created_at", nullable = false, updatable = false)
     private Instant createdAt = Instant.now();
 
     @Column(name = "updated_at", nullable = false)
@@ -51,6 +46,9 @@ public class Ticket {
     @ManyToOne
     @JoinColumn(name = "assigned_to", nullable = false)
     private User assignedTo;
+
+    @OneToMany(mappedBy = "ticket", fetch = FetchType.LAZY)
+    private List<AuditLog> auditLogs;
 
     @PreUpdate
     public void preUpdate() {
