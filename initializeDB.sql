@@ -12,7 +12,7 @@ CREATE TABLE tickets (
     description    CLOB NOT NULL,
     priority       VARCHAR2(10) CHECK (LOWER(priority) IN ('low', 'medium', 'high')) NOT NULL,
     category       VARCHAR2(20) CHECK (LOWER(category) IN ('network', 'hardware', 'software', 'other')) NOT NULL,
-    status         VARCHAR2(20) CHECK (LOWER(status) IN ('new', 'in progress', 'resolved')) DEFAULT 'New',
+    status         VARCHAR2(20) CHECK (LOWER(status) IN ('new', 'in_progress', 'resolved')) DEFAULT 'New',
     created_by     NUMBER NOT NULL, -- Employee who created the ticket
     assigned_to    NUMBER, -- IT support handling the ticket (can be NULL initially)
     created_at     TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
