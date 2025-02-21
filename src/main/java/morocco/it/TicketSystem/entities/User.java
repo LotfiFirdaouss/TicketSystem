@@ -8,6 +8,7 @@ import lombok.Setter;
 import morocco.it.TicketSystem.entities.enums.Role;
 
 import java.time.Instant;
+import java.util.List;
 
 @Entity
 @Table(name= "users")
@@ -31,4 +32,10 @@ public class User {
 
     @Column(name = "created_at", updatable = false)
     private Instant createdAt = Instant.now();
+
+    @OneToMany(mappedBy = "createdBy", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    private List<Ticket> createdTickets;
+
+    @OneToMany(mappedBy = "assignedTo", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    private List<Ticket> assignedTickets;
 }
