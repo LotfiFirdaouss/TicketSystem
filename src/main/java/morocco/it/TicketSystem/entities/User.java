@@ -11,6 +11,7 @@ import java.util.List;
 @Table(name= "users")
 @SequenceGenerator(name = "user_seq", sequenceName = "user_seq", allocationSize = 1)
 @Data
+@Builder
 public class User {
 
     @Id
@@ -25,7 +26,7 @@ public class User {
     private Role role;
 
     @Column(name = "created_at", updatable = false)
-    private Instant createdAt = Instant.now();
+    private Instant createdAt;
 
     @OneToMany(mappedBy = "createdBy", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     private List<Ticket> createdTickets;
@@ -35,4 +36,14 @@ public class User {
 
     @OneToMany(mappedBy = "user")
     private List<AuditLog> auditLogs;
+
+    @OneToMany(mappedBy = "createdBy")
+    List<Comment> comments;
+
+    @PrePersist
+    public void prePersist() {
+        if (createdAt == null) {
+            createdAt = Instant.now(); // set the timestamp only if it's not already set
+        }
+    }
 }

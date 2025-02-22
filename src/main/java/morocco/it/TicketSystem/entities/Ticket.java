@@ -13,6 +13,7 @@ import java.util.List;
 @Table(name = "tickets")
 @SequenceGenerator(name = "ticket_seq", sequenceName = "ticket_seq", allocationSize = 1)
 @Data
+@Builder
 public class Ticket {
 
     @Id
@@ -31,13 +32,13 @@ public class Ticket {
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
-    private Status status = Status.NEW;
+    private Status status;
 
     @Column(name = "created_at", nullable = false, updatable = false)
-    private Instant createdAt = Instant.now();
+    private Instant createdAt;
 
-    @Column(name = "updated_at", nullable = false)
-    private Instant updatedAt = Instant.now();
+    @Column(name = "updated_at")
+    private Instant updatedAt;
 
     @ManyToOne
     @JoinColumn(name = "created_by", nullable = false)
@@ -50,8 +51,22 @@ public class Ticket {
     @OneToMany(mappedBy = "ticket", fetch = FetchType.LAZY)
     private List<AuditLog> auditLogs;
 
+    @OneToMany(mappedBy = "ticket", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    private List<Comment> comments;
+
+    @PrePersist
+    public void prePersist() {
+        if (createdAt == null) {
+            createdAt = Instant.now(); // set the timestamp only if it's not already set
+        }
+        if(status == null){
+            status = Status.NEW;
+        }
+    }
+
     @PreUpdate
     public void preUpdate() {
         this.updatedAt = Instant.now(); // Update the updated_at field
     }
+
 }

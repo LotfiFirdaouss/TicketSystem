@@ -9,6 +9,7 @@ import java.time.Instant;
 @Table(name = "audit_logs")
 @SequenceGenerator(name = "audit_seq", sequenceName = "audit_seq", allocationSize = 1)
 @Data
+@Builder
 public class AuditLog {
 
     @Id
@@ -26,5 +27,12 @@ public class AuditLog {
     private User user;
 
     @Column(name = "timestamp", nullable = false, updatable = false)
-    private Instant timestamp = Instant.now();
+    private Instant timestamp;
+
+    @PrePersist
+    public void prePersist() {
+        if (timestamp == null) {
+            timestamp = Instant.now(); // set the timestamp only if it's not already set
+        }
+    }
 }
