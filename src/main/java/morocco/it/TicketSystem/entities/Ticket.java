@@ -59,6 +59,9 @@ public class Ticket {
         if (createdAt == null) {
             createdAt = Instant.now(); // set the timestamp only if it's not already set
         }
+        if(status == null){
+            status = Status.NEW;
+        }
     }
 
     @PreUpdate
