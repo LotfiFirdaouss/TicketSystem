@@ -11,6 +11,8 @@ import java.util.List;
 @Table(name= "users")
 @SequenceGenerator(name = "user_seq", sequenceName = "user_seq", allocationSize = 1)
 @Data
+@NoArgsConstructor
+@AllArgsConstructor
 @Builder
 public class User {
 
@@ -18,7 +20,10 @@ public class User {
     @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "user_seq")
     private Long id;
 
+    @Column(unique = true, nullable = false)
     private String username;
+
+    @Column(nullable = false)
     private String password;
 
     @Enumerated(EnumType.STRING)
