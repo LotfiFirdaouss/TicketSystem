@@ -20,5 +20,5 @@ public class TicketResponse {
     private Instant createdAt;
     private Instant updatedAt;
     private Long createdById;
-    private String assignedToUsername;
+    private Long assignedToId;
 }

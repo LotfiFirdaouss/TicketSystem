@@ -223,8 +223,8 @@ public class TicketServiceImpl implements TicketService {
                 .createdAt(ticket.getCreatedAt())
                 .updatedAt(ticket.getUpdatedAt())
                 .createdById(ticket.getCreatedBy().getId())
-                .assignedToUsername(Optional.ofNullable(ticket.getAssignedTo())
-                        .map(User::getUsername)
+                .assignedToId(Optional.ofNullable(ticket.getAssignedTo())
+                        .map(User::getId)
                         .orElse(null)) // or some default value
                 .build();
     }
