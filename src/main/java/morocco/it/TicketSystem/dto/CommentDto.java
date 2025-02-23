@@ -12,6 +12,10 @@ import lombok.NoArgsConstructor;
 @Builder
 @Schema(description = "Represents a request to add a new comment to an existing ticket")
 public class CommentDto {
+
+    @Schema(description = "The content of the comment", example = "This is a sample comment.", required = true)
     private String content;
+
+    @Schema(description = "The ID of the user who created the comment", example = "1", required = true)
     private Long createdById;
 }
