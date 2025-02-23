@@ -1,5 +1,6 @@
 package morocco.it.TicketSystem.dto;
 
+import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
@@ -10,6 +11,7 @@ import morocco.it.TicketSystem.entities.enums.Priority;
 import morocco.it.TicketSystem.entities.enums.Status;
 
 @Data
+@Schema(description = "Represents a request to create a new ticket")
 public class TicketRequest {
     @NotBlank(message = "Title is required")
     @Size(max = 255, message = "Title must be at most 255 characters")

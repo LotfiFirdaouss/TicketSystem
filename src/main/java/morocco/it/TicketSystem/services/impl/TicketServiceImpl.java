@@ -17,6 +17,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 
+import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
@@ -59,7 +60,8 @@ public class TicketServiceImpl implements TicketService {
     @Override
     public TicketResponse changeTicketStatus(TicketRequestUpdate ticketRequestUpdate, Long ticketId) {
         // Get the ticket (throws exception if not found)
-        Ticket ticket = getTicketById(ticketId);
+        Ticket ticket = ticketRepository.findById(ticketId)
+                .orElseThrow(() -> new ResourceNotFoundException("Ticket not found with ID: "+ticketId));
 
         // Validate the status index
         Status newStatus = ticketRequestUpdate.getStatus();
@@ -90,17 +92,16 @@ public class TicketServiceImpl implements TicketService {
 
     @Override
     public TicketResponse assignTicket(TicketRequestUpdate ticketRequestUpdate, Long ticketId) {
-        return assignTicketHelper(ticketRequestUpdate,ticketId,TicketAction.ASSIGNED); // ASSIGNED
-    }
-
-    @Override
-    public TicketResponse reassignTicket(TicketRequestUpdate ticketRequestUpdate, Long ticketId) {
-        return assignTicketHelper(ticketRequestUpdate,ticketId,TicketAction.REASSIGNED); // REASSIGNED
-    }
-
-    private TicketResponse assignTicketHelper(TicketRequestUpdate ticketRequestUpdate, Long ticketId, TicketAction ticketAction) {
         // Get the ticket (throws exception if not found)
-        Ticket ticket = getTicketById(ticketId);
+        Ticket ticket = ticketRepository.findById(ticketId)
+                .orElseThrow(() -> new ResourceNotFoundException("Ticket not found with ID: "+ticketId));
+
+
+        // Check if it's first time assignement or reassignement
+        TicketAction ticketAction = TicketAction.ASSIGNED;
+        if(ticket.getAssignedTo() != null){
+            ticketAction = TicketAction.REASSIGNED;
+        }
 
         // Validate assignedToId
         Long assignedToId = ticketRequestUpdate.getAssignedToId();
@@ -132,9 +133,10 @@ public class TicketServiceImpl implements TicketService {
     }
 
     @Override
-    public Comment addCommentToTicket(CommentRequest commentRequest, Long ticketId) {
+    public TicketResponse addCommentToTicket(CommentDto commentRequest, Long ticketId) {
         // Get the ticket and user (throws exception if not found)
-        Ticket ticket = getTicketById(ticketId);
+        Ticket ticket = ticketRepository.findById(ticketId)
+                .orElseThrow(() -> new ResourceNotFoundException("Ticket not found with ID: "+ticketId));
         User user = userService.getUserById(commentRequest.getCreatedById());
 
         // map to Comment
@@ -156,16 +158,20 @@ public class TicketServiceImpl implements TicketService {
 
         auditLogService.createAuditLog(auditLogRequest);
 
+        // Get the ticket
+        TicketResponse ticketResponse = fromEntityToResponse(ticketRepository.getById(ticketId));
+
         // returning the result
-        return savedComment;
+        return ticketResponse;
     }
 
 
 
     @Override
-    public Ticket getTicketById(Long id) {
-        return ticketRepository.findById(id)
+    public TicketResponse getTicketById(Long id) {
+        Ticket ticket = ticketRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Ticket not found with ID: "+id));
+        return fromEntityToResponse(ticket);
     }
 
     @Override
@@ -184,9 +190,19 @@ public class TicketServiceImpl implements TicketService {
                 .collect(Collectors.toList());
     }
 
+//    @Override
+//    public Optional<TicketResponse> getEmployeeTicketsById(Long employeeId, Long ticketId) {
+//        Optional<Ticket> ticket = ticketRepository.findByCreatedBy_IdAndId(employeeId, ticketId);
+//        return ticket.map(this::fromEntityToResponse); // Correctly handling Optional
+//    }
+//
+//    @Override
+//    public List<TicketResponse> getEmployeeTicketsByStatus(Long employeeId, Status status) {
+//        return null;
+//    }
+
     @Override
-    public List<TicketResponse> getTicketByStatus(int statusIndex) {
-        Status status = Status.fromIndex(statusIndex);
+    public List<TicketResponse> getTicketByStatus(Status status) {
         List<Ticket> tickets = ticketRepository.findByStatus(status);
         return tickets.stream()
                 .map(this::fromEntityToResponse)
@@ -223,9 +239,29 @@ public class TicketServiceImpl implements TicketService {
                 .createdAt(ticket.getCreatedAt())
                 .updatedAt(ticket.getUpdatedAt())
                 .createdById(ticket.getCreatedBy().getId())
-                .assignedToId(Optional.ofNullable(ticket.getAssignedTo())
-                        .map(User::getId)
-                        .orElse(null)) // or some default value
+                .assignedToId(getAssignedToId(ticket.getAssignedTo()))
+                .comments(getCommentRequests(ticket.getComments()))
+                .build();
+    }
+
+    private Long getAssignedToId(User assignedTo) {
+        return Optional.ofNullable(assignedTo)
+                .map(User::getId)
+                .orElse(null); // or use a default value like -1L
+    }
+
+    private List<CommentDto> getCommentRequests(List<Comment> comments) {
+        return Optional.ofNullable(comments)
+                .map(commentList -> commentList.stream()
+                        .map(this::fromEntityToDtoComment) // Map each comment to DTO
+                        .collect(Collectors.toList()))
+                .orElse(Collections.emptyList()); // Return empty list instead of null
+    }
+
+    private CommentDto fromEntityToDtoComment(Comment comment){
+        return CommentDto.builder()
+                .content(comment.getContent())
+                .createdById(comment.getCreatedBy().getId())
                 .build();
     }
 

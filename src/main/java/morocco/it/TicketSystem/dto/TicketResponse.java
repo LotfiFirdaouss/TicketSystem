@@ -7,6 +7,7 @@ import morocco.it.TicketSystem.entities.enums.Priority;
 import morocco.it.TicketSystem.entities.enums.Status;
 
 import java.time.Instant;
+import java.util.List;
 
 @Data
 @Builder
@@ -21,4 +22,5 @@ public class TicketResponse {
     private Instant updatedAt;
     private Long createdById;
     private Long assignedToId;
+    private List<CommentDto> comments;
 }
