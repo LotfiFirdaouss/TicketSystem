@@ -33,6 +33,17 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             String username = jwtUtil.extractUsername(token);
             String role = jwtUtil.extractRole(token);
 
+            // Log the extracted role
+            logger.info("Extracted role from token: " + role);
+
+            // Ensure the role has the ROLE_ prefix
+            if (!role.startsWith("ROLE_")) {
+                role = "ROLE_" + role;
+            }
+
+            // Log the role after adding the prefix
+            logger.info("Role after adding prefix: " + role);
+
             UserDetails userDetails = new User(
                     username, "", Collections.singletonList(new SimpleGrantedAuthority(role))
             );
@@ -40,6 +51,11 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             UsernamePasswordAuthenticationToken authentication = new UsernamePasswordAuthenticationToken(
                     userDetails, null, userDetails.getAuthorities());
             SecurityContextHolder.getContext().setAuthentication(authentication);
+
+            // Log the authentication details
+            logger.info("Authenticated user: " + username + ", Role: " + role);
+        } else {
+            logger.warn("Invalid or missing token");
         }
         filterChain.doFilter(request, response);
     }
