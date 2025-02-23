@@ -136,20 +136,21 @@ public class TicketServiceImpl implements TicketService {
     public TicketResponse addCommentToTicket(CommentDto commentRequest, Long ticketId) {
         // Get the ticket and user (throws exception if not found)
         Ticket ticket = ticketRepository.findById(ticketId)
-                .orElseThrow(() -> new ResourceNotFoundException("Ticket not found with ID: "+ticketId));
+                .orElseThrow(() -> new ResourceNotFoundException("Ticket not found with ID: " + ticketId));
         User user = userService.getUserById(commentRequest.getCreatedById());
 
-        // map to Comment
+        // Map to Comment
         Comment comment = Comment.builder()
                 .content(commentRequest.getContent())
                 .ticket(ticket)
                 .createdBy(user)
                 .build();
 
-        // save comment
+        // Save comment
         Comment savedComment = commentRepository.save(comment);
+        Ticket updatedTicket = ticketRepository.getById(ticketId);
 
-        // logging the action
+        // Log the action
         AuditLogRequest auditLogRequest = AuditLogRequest.builder()
                 .ticket(ticket)
                 .userId(commentRequest.getCreatedById())
@@ -158,11 +159,8 @@ public class TicketServiceImpl implements TicketService {
 
         auditLogService.createAuditLog(auditLogRequest);
 
-        // Get the ticket
-        TicketResponse ticketResponse = fromEntityToResponse(ticketRepository.getById(ticketId));
-
-        // returning the result
-        return ticketResponse;
+        // Return the updated ticket response
+        return fromEntityToResponse(updatedTicket); // Use the existing `ticket` object
     }
 
 

@@ -34,7 +34,7 @@ public class SecurityConfig {
                         .requestMatchers("/swagger-ui.html", "/swagger-ui/**", "/v3/api-docs/**", "/swagger-resources/**", "/webjars/**").permitAll() // Allow Swagger resources
 
                         // EMPLOYEE-ONLY Endpoints
-                        .requestMatchers("/tickets/createTicket").hasRole("EMPLOYEE")
+                        .requestMatchers("/tickets/create-ticket").hasRole("EMPLOYEE")
                         .requestMatchers("/tickets/by-employee-id/*").hasRole("EMPLOYEE")
 
                         // IT_SUPPORT-ONLY Endpoints
@@ -42,7 +42,6 @@ public class SecurityConfig {
                         .requestMatchers("/tickets/by-status/*").hasRole("IT_SUPPORT")
                         .requestMatchers("/tickets/status-update/*").hasRole("IT_SUPPORT")
                         .requestMatchers("/tickets/assign-update/*").hasRole("IT_SUPPORT")
-                        .requestMatchers("/tickets/comment-update/*").hasRole("IT_SUPPORT")
 
                         // General ticket access (only authenticated users)
                         .requestMatchers("/tickets/**").authenticated()
