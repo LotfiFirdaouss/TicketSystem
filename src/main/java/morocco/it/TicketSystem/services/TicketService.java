@@ -2,6 +2,7 @@ package morocco.it.TicketSystem.services;
 
 import morocco.it.TicketSystem.dto.CommentRequest;
 import morocco.it.TicketSystem.dto.TicketRequest;
+import morocco.it.TicketSystem.dto.TicketRequestUpdate;
 import morocco.it.TicketSystem.dto.TicketResponse;
 import morocco.it.TicketSystem.entities.Comment;
 import morocco.it.TicketSystem.entities.Ticket;
@@ -14,9 +15,10 @@ public interface TicketService {
     TicketResponse createTicket(TicketRequest ticketRequest);
 
     // UPDATE
-    TicketResponse changeTicketStatus(TicketRequest ticketRequest); // default=NEW , IN_PROGRESS , RESOLVED
-    TicketResponse assignTicket(TicketRequest ticketRequest);
-    TicketResponse reassignTicket(TicketRequest ticketRequest);
+    TicketResponse changeTicketStatus(TicketRequestUpdate ticketRequestUpdate, Long ticketId); // default=NEW , IN_PROGRESS , RESOLVED
+    TicketResponse assignTicket(TicketRequestUpdate ticketRequestUpdate, Long ticketId);
+    TicketResponse reassignTicket(TicketRequestUpdate ticketRequestUpdate, Long ticketId);
+    Comment addCommentToTicket(CommentRequest commentRequest, Long ticketId);
 
     // READ
     Ticket getTicketById(Long id);

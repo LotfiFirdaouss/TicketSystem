@@ -10,7 +10,6 @@ import morocco.it.TicketSystem.entities.enums.Status;
 import morocco.it.TicketSystem.entities.enums.TicketAction;
 import morocco.it.TicketSystem.repositories.AuditLogRepository;
 import morocco.it.TicketSystem.services.AuditLogService;
-import morocco.it.TicketSystem.services.TicketService;
 import morocco.it.TicketSystem.services.UserService;
 import org.springframework.stereotype.Service;
 
@@ -47,12 +46,12 @@ public class AuditLogServiceImpl implements AuditLogService {
         User user = userService.getUserById(auditLogRequest.getUserId());
 
         // Building the action string
-        TicketAction ticketAction = TicketAction.fromIndex(auditLogRequest.getTicketActionIndex());
+        TicketAction ticketAction = auditLogRequest.getTicketAction();
         String action = "";
         switch (ticketAction){
             case STATUS_CHANGED:
-                Status oldStatus = Status.fromIndex(auditLogRequest.getOldStatusIndex());
-                Status newStatus = Status.fromIndex(auditLogRequest.getNewStatusIndex());
+                Status oldStatus = auditLogRequest.getOldStatus();
+                Status newStatus = auditLogRequest.getNewStatus();
                 action = TicketAction.getActionMessage(ticketAction, oldStatus.name(), newStatus.name());
                 break;
             case ASSIGNED:

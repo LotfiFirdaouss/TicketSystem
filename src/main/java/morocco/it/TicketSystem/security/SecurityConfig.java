@@ -29,10 +29,14 @@ public class SecurityConfig {
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS)) // Stateless session
                 .addFilterBefore(new JwtAuthenticationFilter(jwtUtil), UsernamePasswordAuthenticationFilter.class) // Add JWT filter
                 .authorizeHttpRequests(auth -> auth
+                        .requestMatchers("/h2-console/**").permitAll() // Allow access to H2 console without authentication
                         .requestMatchers("/auth/**").permitAll() // Allow access to /auth/** without authentication
                         .requestMatchers("/employee/**").hasRole("EMPLOYEE") // Restrict /employee/** to EMPLOYEE role
                         .requestMatchers("/it-support/**").hasRole("IT_SUPPORT") // Restrict /it-support/** to IT_SUPPORT role
                         .anyRequest().authenticated() // Require authentication for all other requests
+                )
+                .headers(headers -> headers // Allow frames for H2 console
+                        .frameOptions(frameOptions -> frameOptions.disable())
                 );
 
         return http.build();

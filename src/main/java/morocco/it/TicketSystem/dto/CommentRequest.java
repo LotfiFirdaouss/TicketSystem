@@ -7,6 +7,5 @@ import lombok.Data;
 @Builder
 public class CommentRequest {
     private String content;
-    private Long ticketId;
     private Long createdById;
 }
