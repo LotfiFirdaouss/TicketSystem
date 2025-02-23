@@ -1,30 +1,32 @@
 package morocco.it.TicketSystem.services.impl;
 
 import lombok.RequiredArgsConstructor;
-import morocco.it.TicketSystem.dto.AuditLogRequest;
-import morocco.it.TicketSystem.dto.CommentRequest;
-import morocco.it.TicketSystem.dto.TicketRequest;
-import morocco.it.TicketSystem.dto.TicketResponse;
+import morocco.it.TicketSystem.dto.*;
 import morocco.it.TicketSystem.entities.Comment;
 import morocco.it.TicketSystem.entities.Ticket;
 import morocco.it.TicketSystem.entities.User;
-import morocco.it.TicketSystem.entities.enums.Category;
-import morocco.it.TicketSystem.entities.enums.Priority;
 import morocco.it.TicketSystem.entities.enums.Status;
+import morocco.it.TicketSystem.entities.enums.TicketAction;
 import morocco.it.TicketSystem.exceptions.ResourceNotFoundException;
 import morocco.it.TicketSystem.repositories.CommentRepository;
 import morocco.it.TicketSystem.repositories.TicketRepository;
 import morocco.it.TicketSystem.services.AuditLogService;
 import morocco.it.TicketSystem.services.TicketService;
 import morocco.it.TicketSystem.services.UserService;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 
+import java.util.Collections;
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 @RequiredArgsConstructor
 @Service
 public class TicketServiceImpl implements TicketService {
+
+    private static final Logger log = LoggerFactory.getLogger(TicketService.class);
 
     private final TicketRepository ticketRepository;
     private final CommentRepository commentRepository;
@@ -33,15 +35,20 @@ public class TicketServiceImpl implements TicketService {
 
     @Override
     public TicketResponse createTicket(TicketRequest ticketRequest){
+        log.info("Received request to create ticket: {}", ticketRequest);
+
         // Saving the ticket
         Ticket ticket = fromRequestToEntity(ticketRequest);
+        log.debug("Converted DTO to entity: {}", ticket);
+
         Ticket createdTicket = ticketRepository.save(ticket);
+        log.info("Ticket successfully saved with ID: {}", createdTicket.getId());
 
         // logging the action
         AuditLogRequest auditLogRequest = AuditLogRequest.builder()
                 .ticket(createdTicket)
                 .userId(createdTicket.getCreatedBy().getId())
-                .ticketActionIndex(1) // CREATED
+                .ticketAction(TicketAction.CREATED)
                 .build();
 
         auditLogService.createAuditLog(auditLogRequest);
@@ -51,48 +58,61 @@ public class TicketServiceImpl implements TicketService {
     }
 
     @Override
-    public TicketResponse changeTicketStatus(TicketRequest ticketRequest) {
+    public TicketResponse changeTicketStatus(TicketRequestUpdate ticketRequestUpdate, Long ticketId) {
         // Get the ticket (throws exception if not found)
-        Ticket ticket = getTicketById(ticketRequest.getId());
+        Ticket ticket = ticketRepository.findById(ticketId)
+                .orElseThrow(() -> new ResourceNotFoundException("Ticket not found with ID: "+ticketId));
 
-        // Setting the new status
-        Status status = Status.fromIndex(ticketRequest.getStatusIndex());
-        ticket.setStatus(status);
+        // Validate the status index
+        Status newStatus = ticketRequestUpdate.getStatus();
 
-        // Saving the updated ticket
+        // Log the old status before updating
+        Status oldStatus = ticket.getStatus();
+
+        // Update the ticket status
+        ticket.setStatus(newStatus);
+
+        // Save the updated ticket
         Ticket savedTicket = ticketRepository.save(ticket);
 
-        // logging the action
+        // Log the status change action
         AuditLogRequest auditLogRequest = AuditLogRequest.builder()
-                .ticket(savedTicket)
-                .userId(savedTicket.getCreatedBy().getId())
-                .ticketActionIndex(0) // STATUS_CHANGED
-                .oldStatusIndex(ticket.getStatus().ordinal())
-                .newStatusIndex(ticketRequest.getStatusIndex())
+                .ticket(ticket)
+                .userId(ticket.getCreatedBy().getId())
+                .ticketAction(TicketAction.STATUS_CHANGED)
+                .oldStatus(oldStatus)
+                .newStatus(newStatus)
                 .build();
 
         auditLogService.createAuditLog(auditLogRequest);
 
-        // returning the result
-        return fromEntityToResponse(savedTicket);
+        // Return the updated ticket response
+        return fromEntityToResponse(ticket);
     }
 
     @Override
-    public TicketResponse assignTicket(TicketRequest ticketRequest) {
-        return assignTicketHelper(ticketRequest,2); // ASSIGNED
-    }
-
-    @Override
-    public TicketResponse reassignTicket(TicketRequest ticketRequest) {
-        return assignTicketHelper(ticketRequest,3); // REASSIGNED
-    }
-
-    private TicketResponse assignTicketHelper(TicketRequest ticketRequest, int ticketActionIndex) {
+    public TicketResponse assignTicket(TicketRequestUpdate ticketRequestUpdate, Long ticketId) {
         // Get the ticket (throws exception if not found)
-        Ticket ticket = getTicketById(ticketRequest.getId());
+        Ticket ticket = ticketRepository.findById(ticketId)
+                .orElseThrow(() -> new ResourceNotFoundException("Ticket not found with ID: "+ticketId));
+
+
+        // Check if it's first time assignement or reassignement
+        TicketAction ticketAction = TicketAction.ASSIGNED;
+        if(ticket.getAssignedTo() != null){
+            ticketAction = TicketAction.REASSIGNED;
+        }
+
+        // Validate assignedToId
+        Long assignedToId = ticketRequestUpdate.getAssignedToId();
+        if (assignedToId == null) {
+            throw new IllegalArgumentException("assignedToId cannot be null");
+        }
+
+        // Fetch the user (throws exception if not found)
+        User itSupport = userService.getUserById(assignedToId);
 
         // Assign the ticket to IT support
-        User itSupport = userService.getUserById(ticketRequest.getAssignedToId());
         ticket.setAssignedTo(itSupport);
 
         // Saving the updated ticket
@@ -102,8 +122,8 @@ public class TicketServiceImpl implements TicketService {
         AuditLogRequest auditLogRequest = AuditLogRequest.builder()
                 .ticket(savedTicket)
                 .userId(savedTicket.getCreatedBy().getId())
-                .ticketActionIndex(ticketActionIndex) // ASSIGNED
-                .assignedToUserId(ticketRequest.getAssignedToId())
+                .ticketAction(ticketAction)
+                .assignedToUserId(ticketRequestUpdate.getAssignedToId())
                 .build();
 
         auditLogService.createAuditLog(auditLogRequest);
@@ -112,12 +132,46 @@ public class TicketServiceImpl implements TicketService {
         return fromEntityToResponse(savedTicket);
     }
 
+    @Override
+    public TicketResponse addCommentToTicket(CommentDto commentRequest, Long ticketId) {
+        // Get the ticket and user (throws exception if not found)
+        Ticket ticket = ticketRepository.findById(ticketId)
+                .orElseThrow(() -> new ResourceNotFoundException("Ticket not found with ID: "+ticketId));
+        User user = userService.getUserById(commentRequest.getCreatedById());
+
+        // map to Comment
+        Comment comment = Comment.builder()
+                .content(commentRequest.getContent())
+                .ticket(ticket)
+                .createdBy(user)
+                .build();
+
+        // save comment
+        Comment savedComment = commentRepository.save(comment);
+
+        // logging the action
+        AuditLogRequest auditLogRequest = AuditLogRequest.builder()
+                .ticket(ticket)
+                .userId(commentRequest.getCreatedById())
+                .ticketAction(TicketAction.COMMENT_ADDED)
+                .build();
+
+        auditLogService.createAuditLog(auditLogRequest);
+
+        // Get the ticket
+        TicketResponse ticketResponse = fromEntityToResponse(ticketRepository.getById(ticketId));
+
+        // returning the result
+        return ticketResponse;
+    }
+
 
 
     @Override
-    public Ticket getTicketById(Long id) {
-        return ticketRepository.findById(id)
+    public TicketResponse getTicketById(Long id) {
+        Ticket ticket = ticketRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Ticket not found with ID: "+id));
+        return fromEntityToResponse(ticket);
     }
 
     @Override
@@ -136,9 +190,19 @@ public class TicketServiceImpl implements TicketService {
                 .collect(Collectors.toList());
     }
 
+//    @Override
+//    public Optional<TicketResponse> getEmployeeTicketsById(Long employeeId, Long ticketId) {
+//        Optional<Ticket> ticket = ticketRepository.findByCreatedBy_IdAndId(employeeId, ticketId);
+//        return ticket.map(this::fromEntityToResponse); // Correctly handling Optional
+//    }
+//
+//    @Override
+//    public List<TicketResponse> getEmployeeTicketsByStatus(Long employeeId, Status status) {
+//        return null;
+//    }
+
     @Override
-    public List<TicketResponse> getTicketByStatus(int statusIndex) {
-        Status status = Status.fromIndex(statusIndex);
+    public List<TicketResponse> getTicketByStatus(Status status) {
         List<Ticket> tickets = ticketRepository.findByStatus(status);
         return tickets.stream()
                 .map(this::fromEntityToResponse)
@@ -149,17 +213,16 @@ public class TicketServiceImpl implements TicketService {
         Long createdById = ticketRequest.getCreatedById();
         User user = userService.getUserById(createdById);
 
-        Ticket ticket = Ticket.builder()
-                .title(ticketRequest.getTitle())
-                .description(ticketRequest.getDescription())
-                .priority(Priority.fromIndex(ticketRequest.getPriorityIndex()))
-                .category(Category.fromIndex(ticketRequest.getCategoryIndex()))
-                .createdBy(user)
-                .build();
+        Ticket ticket = new Ticket();  // Ensure a new instance (no ID set)
+        ticket.setTitle(ticketRequest.getTitle());
+        ticket.setDescription(ticketRequest.getDescription());
+        ticket.setPriority(ticketRequest.getPriority());
+        ticket.setCategory(ticketRequest.getCategory());
+        ticket.setCreatedBy(user);
 
-        int statusIndex = ticketRequest.getStatusIndex();
-        if(statusIndex != -1) { // the status is set on the request
-            ticket.setStatus(Status.fromIndex(statusIndex));
+        Status status = ticketRequest.getStatus();
+        if(status != null) { // If status is provided
+            ticket.setStatus(status);
         }
 
         return ticket;
@@ -176,7 +239,29 @@ public class TicketServiceImpl implements TicketService {
                 .createdAt(ticket.getCreatedAt())
                 .updatedAt(ticket.getUpdatedAt())
                 .createdById(ticket.getCreatedBy().getId())
-                .assignedToUsername(ticket.getAssignedTo().getUsername())
+                .assignedToId(getAssignedToId(ticket.getAssignedTo()))
+                .comments(getCommentRequests(ticket.getComments()))
+                .build();
+    }
+
+    private Long getAssignedToId(User assignedTo) {
+        return Optional.ofNullable(assignedTo)
+                .map(User::getId)
+                .orElse(null); // or use a default value like -1L
+    }
+
+    private List<CommentDto> getCommentRequests(List<Comment> comments) {
+        return Optional.ofNullable(comments)
+                .map(commentList -> commentList.stream()
+                        .map(this::fromEntityToDtoComment) // Map each comment to DTO
+                        .collect(Collectors.toList()))
+                .orElse(Collections.emptyList()); // Return empty list instead of null
+    }
+
+    private CommentDto fromEntityToDtoComment(Comment comment){
+        return CommentDto.builder()
+                .content(comment.getContent())
+                .createdById(comment.getCreatedBy().getId())
                 .build();
     }
 

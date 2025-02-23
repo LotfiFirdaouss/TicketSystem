@@ -7,14 +7,6 @@ public enum TicketAction {
     REASSIGNED, // 3
     COMMENT_ADDED; // 4
 
-    public static TicketAction fromIndex(int index) {
-        TicketAction[] values = TicketAction.values();
-        if (index >= 0 && index < values.length) {
-            return values[index];
-        }
-        throw new IllegalArgumentException("Invalid index: " + index);
-    }
-
     public static String getActionMessage(TicketAction action, String... details) {
         switch (action) {
             case STATUS_CHANGED:

@@ -29,10 +29,26 @@ public class SecurityConfig {
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS)) // Stateless session
                 .addFilterBefore(new JwtAuthenticationFilter(jwtUtil), UsernamePasswordAuthenticationFilter.class) // Add JWT filter
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/auth/**").permitAll() // Allow access to /auth/** without authentication
-                        .requestMatchers("/employee/**").hasRole("EMPLOYEE") // Restrict /employee/** to EMPLOYEE role
-                        .requestMatchers("/it-support/**").hasRole("IT_SUPPORT") // Restrict /it-support/** to IT_SUPPORT role
-                        .anyRequest().authenticated() // Require authentication for all other requests
+                        .requestMatchers("/h2-console/**").permitAll() // Allow access to H2 console
+                        .requestMatchers("/auth/**").permitAll() // Allow authentication endpoints
+                        .requestMatchers("/swagger-ui.html", "/swagger-ui/**", "/v3/api-docs/**", "/swagger-resources/**", "/webjars/**").permitAll() // Allow Swagger resources
+
+                        // EMPLOYEE-ONLY Endpoints
+                        .requestMatchers("/tickets/createTicket").hasRole("EMPLOYEE")
+                        .requestMatchers("/tickets/by-employee-id/*").hasRole("EMPLOYEE")
+
+                        // IT_SUPPORT-ONLY Endpoints
+                        .requestMatchers("/tickets/all").hasRole("IT_SUPPORT")
+                        .requestMatchers("/tickets/by-status/*").hasRole("IT_SUPPORT")
+                        .requestMatchers("/tickets/status-update/*").hasRole("IT_SUPPORT")
+                        .requestMatchers("/tickets/assign-update/*").hasRole("IT_SUPPORT")
+                        .requestMatchers("/tickets/comment-update/*").hasRole("IT_SUPPORT")
+
+                        // General ticket access (only authenticated users)
+                        .requestMatchers("/tickets/**").authenticated()
+                )
+                .headers(headers -> headers // Allow frames for H2 console
+                        .frameOptions(frameOptions -> frameOptions.disable())
                 );
 
         return http.build();

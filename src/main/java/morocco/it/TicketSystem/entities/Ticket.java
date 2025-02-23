@@ -13,6 +13,8 @@ import java.util.List;
 @Table(name = "tickets")
 @SequenceGenerator(name = "ticket_seq", sequenceName = "ticket_seq", allocationSize = 1)
 @Data
+@NoArgsConstructor
+@AllArgsConstructor
 @Builder
 public class Ticket {
 
@@ -45,7 +47,7 @@ public class Ticket {
     private User createdBy;
 
     @ManyToOne
-    @JoinColumn(name = "assigned_to", nullable = false)
+    @JoinColumn(name = "assigned_to")
     private User assignedTo;
 
     @OneToMany(mappedBy = "ticket", fetch = FetchType.LAZY)

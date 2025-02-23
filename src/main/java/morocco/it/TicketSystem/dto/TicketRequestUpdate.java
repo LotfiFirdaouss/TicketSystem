@@ -1,26 +1,18 @@
 package morocco.it.TicketSystem.dto;
 
-import lombok.Builder;
+import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Data;
 import morocco.it.TicketSystem.entities.enums.Category;
 import morocco.it.TicketSystem.entities.enums.Priority;
 import morocco.it.TicketSystem.entities.enums.Status;
 
-import java.time.Instant;
-import java.util.List;
-
 @Data
-@Builder
-public class TicketResponse {
-    private Long id;
+@Schema(description = "Represents a request to update an existing ticket")
+public class TicketRequestUpdate {
     private String title;
     private String description;
     private Priority priority;
     private Category category;
     private Status status;
-    private Instant createdAt;
-    private Instant updatedAt;
-    private Long createdById;
     private Long assignedToId;
-    private List<CommentDto> comments;
 }

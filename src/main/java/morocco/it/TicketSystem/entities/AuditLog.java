@@ -9,6 +9,8 @@ import java.time.Instant;
 @Table(name = "audit_logs")
 @SequenceGenerator(name = "audit_seq", sequenceName = "audit_seq", allocationSize = 1)
 @Data
+@NoArgsConstructor
+@AllArgsConstructor
 @Builder
 public class AuditLog {
 

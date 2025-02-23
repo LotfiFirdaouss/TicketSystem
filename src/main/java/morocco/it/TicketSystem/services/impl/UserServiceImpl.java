@@ -1,9 +1,7 @@
 package morocco.it.TicketSystem.services.impl;
 
 import lombok.AllArgsConstructor;
-import morocco.it.TicketSystem.dto.UserRequest;
 import morocco.it.TicketSystem.entities.User;
-import morocco.it.TicketSystem.entities.enums.Role;
 import morocco.it.TicketSystem.exceptions.ResourceNotFoundException;
 import morocco.it.TicketSystem.repositories.UserRepository;
 import morocco.it.TicketSystem.services.UserService;
@@ -20,15 +18,15 @@ public class UserServiceImpl implements UserService {
         return userRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("User not found with ID: "+id));
     }
+    @Override
+    public User getUserByUsername(String username){
+        return userRepository.findByUsername(username)
+                .orElseThrow(() -> new ResourceNotFoundException("User not found with Username: "+ username));
+    }
 
     @Override
-    public User createUser(UserRequest userRequest){
-        User user = User.builder()
-                .username(userRequest.getUsername())
-                .password(userRequest.getPassword())
-                .role(Role.fromIndex(userRequest.getRoleIndex()))
-                .build();
-
+    public User createUser(User user) {
         return userRepository.save(user);
     }
+
 }
