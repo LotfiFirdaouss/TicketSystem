@@ -1,0 +1,37 @@
+version: '3.8'
+
+services:
+  oracle-db:
+    image: gvenzl/oracle-xe:21-slim
+    container_name: oracle-db
+    environment:
+      - ORACLE_PASSWORD=ts_password_123
+    ports:
+      - "1521:1521"
+    volumes:
+      - oracle-data:/opt/oracle/oradata
+      - ./database-startup/TICKET_SYSTEM.sql:/docker-entrypoint-initdb.d/TICKET_SYSTEM.sql
+    healthcheck:
+      test: ["CMD", "bash", "-c", "echo 'SELECT 1 FROM dual;' | sqlplus -L SYSTEM/ts_password_123@localhost:1521/XEPDB1"]
+      interval: 10s
+      timeout: 10s
+      retries: 10
+
+  ts-api:
+    build:
+      context: .  # Use the current directory as the build context
+      dockerfile: Dockerfile  # Specify the Dockerfile to use
+    container_name: ts-api
+    ports:
+      - "8080:8080"
+    depends_on:
+      oracle-db:
+        condition: service_healthy
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:oracle:thin:@oracle-db:1521/XEPDB1
+      SPRING_DATASOURCE_USERNAME: SYSTEM
+      SPRING_DATASOURCE_PASSWORD: ts_password_123
+      SPRING_JPA_PROPERTIES_HIBERNATE_DEFAULT_SCHEMA: TICKET_SYSTEM
+
+volumes:
+  oracle-data:

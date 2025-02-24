@@ -1,18 +1,18 @@
--- Create the ticket_system user
-CREATE USER ticket_system IDENTIFIED BY ticket_password_123;
-GRANT CONNECT, RESOURCE TO ticket_system;
-ALTER USER ticket_system QUOTA UNLIMITED ON USERS;
+-- Create the TICKET_SYSTEM user
+CREATE USER TICKET_SYSTEM IDENTIFIED BY ticket_password_123;
+GRANT CONNECT, RESOURCE TO TICKET_SYSTEM;
+ALTER USER TICKET_SYSTEM QUOTA UNLIMITED ON USERS;
 
--- Switch to the ticket_system user
-ALTER SESSION SET CURRENT_SCHEMA = ticket_system;
+-- Switch to the TICKET_SYSTEM schema
+ALTER SESSION SET CURRENT_SCHEMA = TICKET_SYSTEM;
 
--- Create sequences for ID generation
+-- Create sequences
 CREATE SEQUENCE user_seq START WITH 1 INCREMENT BY 1;
 CREATE SEQUENCE ticket_seq START WITH 1 INCREMENT BY 1;
 CREATE SEQUENCE comment_seq START WITH 1 INCREMENT BY 1;
 CREATE SEQUENCE audit_seq START WITH 1 INCREMENT BY 1;
 
--- Create the users table
+-- Create tables
 CREATE TABLE users (
     id NUMBER DEFAULT user_seq.NEXTVAL PRIMARY KEY,
     username VARCHAR2(255) UNIQUE NOT NULL,
@@ -42,10 +42,9 @@ CREATE TABLE comments (
     user_id NUMBER NOT NULL REFERENCES users(id)
 );
 
--- Create the audit_logs table
 CREATE TABLE audit_logs (
     id NUMBER DEFAULT audit_seq.NEXTVAL PRIMARY KEY,
-    action VARCHAR2(255) NOT NULL, -- Allow any string value
+    action VARCHAR2(255) NOT NULL,
     ticket_id NUMBER NOT NULL REFERENCES tickets(id),
     user_id NUMBER NOT NULL REFERENCES users(id),
     timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP
