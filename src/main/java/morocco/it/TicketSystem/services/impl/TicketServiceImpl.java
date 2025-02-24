@@ -155,6 +155,7 @@ public class TicketServiceImpl implements TicketService {
                 .ticket(ticket)
                 .userId(commentRequest.getCreatedById())
                 .ticketAction(TicketAction.COMMENT_ADDED)
+                .comment(commentRequest.getContent())
                 .build();
 
         auditLogService.createAuditLog(auditLogRequest);
@@ -187,17 +188,6 @@ public class TicketServiceImpl implements TicketService {
                 .map(this::fromEntityToResponse)
                 .collect(Collectors.toList());
     }
-
-//    @Override
-//    public Optional<TicketResponse> getEmployeeTicketsById(Long employeeId, Long ticketId) {
-//        Optional<Ticket> ticket = ticketRepository.findByCreatedBy_IdAndId(employeeId, ticketId);
-//        return ticket.map(this::fromEntityToResponse); // Correctly handling Optional
-//    }
-//
-//    @Override
-//    public List<TicketResponse> getEmployeeTicketsByStatus(Long employeeId, Status status) {
-//        return null;
-//    }
 
     @Override
     public List<TicketResponse> getTicketByStatus(Status status) {
