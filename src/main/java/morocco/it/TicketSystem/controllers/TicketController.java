@@ -90,17 +90,6 @@ public class TicketController {
         return new ResponseEntity<>(ticketResponses, HttpStatus.OK);
     }
 
-//    @Operation(summary = "Fetch a specific ticket for an employee.")
-//    @GetMapping("/by-employee-id/{employeeId}/by-ticket-id/{ticketId}")
-//    public ResponseEntity<Optional<TicketResponse>> getEmployeeTicketById(@PathVariable Long employeeId, @PathVariable Long ticketId){
-//        Optional<TicketResponse> ticketResponseOptional = ticketService.getEmployeeTicketsById(employeeId, ticketId);
-//        return new ResponseEntity<>(ticketResponseOptional, HttpStatus.OK);
-//    }
-
-    //@Operation(summary = "Fetch all tickets for an employee with a specific status.")
-    //@GetMapping("/by-employee-id/{employeeId}/by-status/{status}")
-    //public getEmployeeTicketByStatus
-
     @Operation(summary = "Get ticket by ID", description = "Retrieves a specific ticket by its ID.")
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "Ticket retrieved successfully"),

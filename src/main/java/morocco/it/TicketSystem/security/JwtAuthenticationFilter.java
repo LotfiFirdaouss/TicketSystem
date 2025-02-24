@@ -6,7 +6,6 @@ import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.AllArgsConstructor;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -33,16 +32,11 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             String username = jwtUtil.extractUsername(token);
             String role = jwtUtil.extractRole(token);
 
-            // Log the extracted role
-            logger.info("Extracted role from token: " + role);
-
             // Ensure the role has the ROLE_ prefix
             if (!role.startsWith("ROLE_")) {
                 role = "ROLE_" + role;
             }
 
-            // Log the role after adding the prefix
-            logger.info("Role after adding prefix: " + role);
 
             UserDetails userDetails = new User(
                     username, "", Collections.singletonList(new SimpleGrantedAuthority(role))
@@ -52,8 +46,6 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                     userDetails, null, userDetails.getAuthorities());
             SecurityContextHolder.getContext().setAuthentication(authentication);
 
-            // Log the authentication details
-            logger.info("Authenticated user: " + username + ", Role: " + role);
         } else {
             logger.warn("Invalid or missing token");
         }

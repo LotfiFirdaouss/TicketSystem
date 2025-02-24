@@ -10,10 +10,7 @@ import java.util.List;
 @Entity
 @Table(name= "users")
 @SequenceGenerator(name = "user_seq", sequenceName = "user_seq", allocationSize = 1)
-@Data
-@NoArgsConstructor
-@AllArgsConstructor
-@Builder
+@Data @NoArgsConstructor @AllArgsConstructor @Builder
 public class User {
 
     @Id

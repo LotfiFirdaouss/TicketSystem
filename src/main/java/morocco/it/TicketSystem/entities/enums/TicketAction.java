@@ -14,9 +14,9 @@ public enum TicketAction {
             case CREATED:
                 return "Ticket created";
             case ASSIGNED:
-                return "Ticket assigned to it support" + details[0];
+                return "Ticket assigned to it support with username : " + details[0];
             case REASSIGNED:
-                return "Ticket reassigned to it support" + details[0];
+                return "Ticket reassigned to it support with username : " + details[0];
             case COMMENT_ADDED:
                 return "Commment added to ticket : " + details[0];
             default:

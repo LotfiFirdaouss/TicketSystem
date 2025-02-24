@@ -23,8 +23,6 @@ public interface TicketService {
     List<TicketResponse> getAllTickets();
 
     List<TicketResponse> getTicketByEmployeeId(Long employeeId);
-//    Optional<TicketResponse> getEmployeeTicketsById(Long employeeId, Long ticketId);
-//    List<TicketResponse> getEmployeeTicketsByStatus(Long employeeId, Status status);
 
     TicketResponse getTicketById(Long id);
     List<TicketResponse> getTicketByStatus(Status status);

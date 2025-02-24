@@ -12,10 +12,7 @@ import java.util.List;
 @Entity
 @Table(name = "tickets")
 @SequenceGenerator(name = "ticket_seq", sequenceName = "ticket_seq", allocationSize = 1)
-@Data
-@NoArgsConstructor
-@AllArgsConstructor
-@Builder
+@Data @NoArgsConstructor @AllArgsConstructor @Builder
 public class Ticket {
 
     @Id

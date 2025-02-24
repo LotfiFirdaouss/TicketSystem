@@ -48,25 +48,22 @@ public class AuditLogServiceImpl implements AuditLogService {
         // Building the action string
         TicketAction ticketAction = auditLogRequest.getTicketAction();
         String action = "";
-        switch (ticketAction){
-            case STATUS_CHANGED:
+        switch (ticketAction) {
+            case STATUS_CHANGED -> {
                 Status oldStatus = auditLogRequest.getOldStatus();
                 Status newStatus = auditLogRequest.getNewStatus();
                 action = TicketAction.getActionMessage(ticketAction, oldStatus.name(), newStatus.name());
-                break;
-            case ASSIGNED:
-            case REASSIGNED:
+            }
+            case ASSIGNED, REASSIGNED -> {
                 User assignedToUser = userService.getUserById(auditLogRequest.getAssignedToUserId());
                 String assignedToUsername = assignedToUser.getUsername().toUpperCase();
                 action = TicketAction.getActionMessage(ticketAction, assignedToUsername);
-                break;
-            case COMMENT_ADDED:
+            }
+            case COMMENT_ADDED -> {
                 String comment = auditLogRequest.getComment();
                 action = TicketAction.getActionMessage(ticketAction, comment);
-                break;
-            default:
-                action = TicketAction.getActionMessage(ticketAction);
-                break;
+            }
+            default -> action = TicketAction.getActionMessage(ticketAction);
         }
 
         // Building the audit log Object
