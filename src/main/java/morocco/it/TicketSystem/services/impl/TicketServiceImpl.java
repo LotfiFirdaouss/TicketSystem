@@ -1,6 +1,6 @@
 package morocco.it.TicketSystem.services.impl;
 
-import lombok.RequiredArgsConstructor;
+import lombok.AllArgsConstructor;
 import morocco.it.TicketSystem.dto.*;
 import morocco.it.TicketSystem.entities.Comment;
 import morocco.it.TicketSystem.entities.Ticket;
@@ -8,6 +8,8 @@ import morocco.it.TicketSystem.entities.User;
 import morocco.it.TicketSystem.entities.enums.Status;
 import morocco.it.TicketSystem.entities.enums.TicketAction;
 import morocco.it.TicketSystem.exceptions.ResourceNotFoundException;
+import morocco.it.TicketSystem.mappers.CommentMapper;
+import morocco.it.TicketSystem.mappers.TicketMapper;
 import morocco.it.TicketSystem.repositories.CommentRepository;
 import morocco.it.TicketSystem.repositories.TicketRepository;
 import morocco.it.TicketSystem.services.AuditLogService;
@@ -17,16 +19,16 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 
-import java.util.Collections;
 import java.util.List;
-import java.util.Optional;
-import java.util.stream.Collectors;
 
-@RequiredArgsConstructor
+@AllArgsConstructor
 @Service
 public class TicketServiceImpl implements TicketService {
 
-    private static final Logger log = LoggerFactory.getLogger(TicketService.class);
+    //private static final Logger log = LoggerFactory.getLogger(TicketService.class);
+
+    private final TicketMapper ticketMapper;
+    private final CommentMapper commentMapper;
 
     private final TicketRepository ticketRepository;
     private final CommentRepository commentRepository;
@@ -35,14 +37,11 @@ public class TicketServiceImpl implements TicketService {
 
     @Override
     public TicketResponse createTicket(TicketRequest ticketRequest){
-        log.info("Received request to create ticket: {}", ticketRequest);
 
         // Saving the ticket
-        Ticket ticket = fromRequestToEntity(ticketRequest);
-        log.debug("Converted DTO to entity: {}", ticket);
+        Ticket ticket = ticketMapper.fromRequestToEntity(ticketRequest);
 
         Ticket createdTicket = ticketRepository.save(ticket);
-        log.info("Ticket successfully saved with ID: {}", createdTicket.getId());
 
         // logging the action
         AuditLogRequest auditLogRequest = AuditLogRequest.builder()
@@ -54,7 +53,7 @@ public class TicketServiceImpl implements TicketService {
         auditLogService.createAuditLog(auditLogRequest);
 
         // Returning the result
-        return fromEntityToResponse(createdTicket);
+        return ticketMapper.fromEntityToResponse(createdTicket);
     }
 
     @Override
@@ -87,7 +86,7 @@ public class TicketServiceImpl implements TicketService {
         auditLogService.createAuditLog(auditLogRequest);
 
         // Return the updated ticket response
-        return fromEntityToResponse(ticket);
+        return ticketMapper.fromEntityToResponse(savedTicket);
     }
 
     @Override
@@ -129,39 +128,37 @@ public class TicketServiceImpl implements TicketService {
         auditLogService.createAuditLog(auditLogRequest);
 
         // returning the result
-        return fromEntityToResponse(savedTicket);
+        return ticketMapper.fromEntityToResponse(savedTicket);
     }
 
     @Override
-    public TicketResponse addCommentToTicket(CommentDto commentRequest, Long ticketId) {
+    public TicketResponse addCommentToTicket(CommentDto commentDto, Long ticketId) {
         // Get the ticket and user (throws exception if not found)
         Ticket ticket = ticketRepository.findById(ticketId)
                 .orElseThrow(() -> new ResourceNotFoundException("Ticket not found with ID: " + ticketId));
-        User user = userService.getUserById(commentRequest.getCreatedById());
 
         // Map to Comment
-        Comment comment = Comment.builder()
-                .content(commentRequest.getContent())
-                .ticket(ticket)
-                .createdBy(user)
-                .build();
+        Comment comment = commentMapper.fromDtoCommentToComment(commentDto);
+
+        // Associate the comment with the ticket
+        comment.setTicket(ticket);
 
         // Save comment
-        Comment savedComment = commentRepository.save(comment);
+        commentRepository.save(comment);
         Ticket updatedTicket = ticketRepository.getById(ticketId);
 
         // Log the action
         AuditLogRequest auditLogRequest = AuditLogRequest.builder()
                 .ticket(ticket)
-                .userId(commentRequest.getCreatedById())
+                .userId(commentDto.getCreatedById())
                 .ticketAction(TicketAction.COMMENT_ADDED)
-                .comment(commentRequest.getContent())
+                .comment(commentDto.getContent())
                 .build();
 
         auditLogService.createAuditLog(auditLogRequest);
 
         // Return the updated ticket response
-        return fromEntityToResponse(updatedTicket); // Use the existing `ticket` object
+        return ticketMapper.fromEntityToResponse(updatedTicket);
     }
 
 
@@ -170,87 +167,25 @@ public class TicketServiceImpl implements TicketService {
     public TicketResponse getTicketById(Long id) {
         Ticket ticket = ticketRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Ticket not found with ID: "+id));
-        return fromEntityToResponse(ticket);
+        return ticketMapper.fromEntityToResponse(ticket);
     }
 
     @Override
     public List<TicketResponse> getAllTickets() {
         List<Ticket> tickets = ticketRepository.findAll();
-        return tickets.stream()
-                .map(this::fromEntityToResponse)
-                .collect(Collectors.toList());
+        return ticketMapper.fromEntityToResponseList(tickets);
     }
 
     @Override
     public List<TicketResponse> getTicketByEmployeeId(Long employeeId) {
         List<Ticket> tickets = ticketRepository.findByCreatedBy_Id(employeeId);
-        return tickets.stream()
-                .map(this::fromEntityToResponse)
-                .collect(Collectors.toList());
+        return ticketMapper.fromEntityToResponseList(tickets);
     }
 
     @Override
     public List<TicketResponse> getTicketByStatus(Status status) {
         List<Ticket> tickets = ticketRepository.findByStatus(status);
-        return tickets.stream()
-                .map(this::fromEntityToResponse)
-                .collect(Collectors.toList());
-    }
-
-    private Ticket fromRequestToEntity(TicketRequest ticketRequest){
-        Long createdById = ticketRequest.getCreatedById();
-        User user = userService.getUserById(createdById);
-
-        Ticket ticket = new Ticket();  // Ensure a new instance (no ID set)
-        ticket.setTitle(ticketRequest.getTitle());
-        ticket.setDescription(ticketRequest.getDescription());
-        ticket.setPriority(ticketRequest.getPriority());
-        ticket.setCategory(ticketRequest.getCategory());
-        ticket.setCreatedBy(user);
-
-        Status status = ticketRequest.getStatus();
-        if(status != null) { // If status is provided
-            ticket.setStatus(status);
-        }
-
-        return ticket;
-    }
-
-    private TicketResponse fromEntityToResponse(Ticket ticket){
-        return TicketResponse.builder()
-                .id(ticket.getId())
-                .title(ticket.getTitle())
-                .description(ticket.getDescription())
-                .priority(ticket.getPriority())
-                .category(ticket.getCategory())
-                .status(ticket.getStatus())
-                .createdAt(ticket.getCreatedAt())
-                .updatedAt(ticket.getUpdatedAt())
-                .createdById(ticket.getCreatedBy().getId())
-                .assignedToId(getAssignedToId(ticket.getAssignedTo()))
-                .comments(getCommentRequests(ticket.getComments()))
-                .build();
-    }
-
-    private Long getAssignedToId(User assignedTo) {
-        return Optional.ofNullable(assignedTo)
-                .map(User::getId)
-                .orElse(null); // or use a default value like -1L
-    }
-
-    private List<CommentDto> getCommentRequests(List<Comment> comments) {
-        return Optional.ofNullable(comments)
-                .map(commentList -> commentList.stream()
-                        .map(this::fromEntityToDtoComment) // Map each comment to DTO
-                        .collect(Collectors.toList()))
-                .orElse(Collections.emptyList()); // Return empty list instead of null
-    }
-
-    private CommentDto fromEntityToDtoComment(Comment comment){
-        return CommentDto.builder()
-                .content(comment.getContent())
-                .createdById(comment.getCreatedBy().getId())
-                .build();
+        return ticketMapper.fromEntityToResponseList(tickets);
     }
 
 }
